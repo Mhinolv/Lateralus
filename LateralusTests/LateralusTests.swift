@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 import Testing
 @testable import Lateralus
 
@@ -84,6 +85,84 @@ struct ChallengeEngineTests {
                 let stride = ChallengeEngine.coprimeStride(for: count, salt: salt)
                 #expect(ChallengeEngine.gcd(stride, count) == 1)
             }
+        }
+    }
+}
+
+struct PersistenceTests {
+    @Test func schemaVersionIsExplicit() {
+        #expect(LateralusSchemaV1.versionIdentifier == Schema.Version(1, 0, 0))
+        #expect(LateralusMigrationPlan.schemas.count == 1)
+    }
+
+    @Test func inMemoryStoreRoundTripsAnAttempt() throws {
+        let container = try AppPersistence.makeContainer(inMemoryOnly: true)
+        let context = ModelContext(container)
+        let challenge = ChallengeEngine.challenge(type: .alternateUse, occurrence: 0)
+        let attempt = Attempt(challenge: challenge, responseText: "A tiny compass", isDaily: true)
+
+        context.insert(attempt)
+        try context.save()
+
+        let fetched = try context.fetch(FetchDescriptor<Attempt>())
+        #expect(fetched.count == 1)
+        #expect(fetched.first?.responseText == "A tiny compass")
+        #expect(fetched.first?.type == .alternateUse)
+    }
+
+    @Test func versionedContainerOpensAPreVersionedStore() throws {
+        let storeURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("store")
+        defer { removeStoreFiles(at: storeURL) }
+
+        do {
+            let legacySchema = Schema([Attempt.self])
+            let legacyConfiguration = ModelConfiguration(
+                schema: legacySchema,
+                url: storeURL,
+                cloudKitDatabase: .none
+            )
+            let legacyContainer = try ModelContainer(
+                for: legacySchema,
+                configurations: [legacyConfiguration]
+            )
+            let context = ModelContext(legacyContainer)
+            let challenge = ChallengeEngine.challenge(type: .fusion, occurrence: 3)
+            context.insert(Attempt(challenge: challenge, responseText: "Legacy entry", isDaily: false))
+            try context.save()
+        }
+
+        let migratedContainer = try AppPersistence.makeContainer(at: storeURL)
+        let migratedContext = ModelContext(migratedContainer)
+        let fetched = try migratedContext.fetch(FetchDescriptor<Attempt>())
+
+        #expect(fetched.count == 1)
+        #expect(fetched.first?.responseText == "Legacy entry")
+        #expect(fetched.first?.type == .fusion)
+    }
+
+    @Test @MainActor func startupFailureIsRecoverable() throws {
+        enum ProbeError: Error { case unavailable }
+        var invocation = 0
+        let controller = PersistenceController {
+            invocation += 1
+            if invocation == 1 { throw ProbeError.unavailable }
+            return try AppPersistence.makeContainer(inMemoryOnly: true)
+        }
+
+        #expect(controller.container == nil)
+        #expect(controller.errorMessage != nil)
+
+        controller.load()
+
+        #expect(controller.container != nil)
+        #expect(controller.errorMessage == nil)
+    }
+
+    private func removeStoreFiles(at url: URL) {
+        for suffix in ["", "-shm", "-wal"] {
+            try? FileManager.default.removeItem(atPath: url.path + suffix)
         }
     }
 }
