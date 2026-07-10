@@ -1,0 +1,15 @@
+.DS_Store
+
+# Xcode user and build state
+xcuserdata/
+*.xcuserstate
+DerivedData/
+build/
+*.xcresult
+
+# Beads local runtime state (issues.jsonl is the tracked source of truth)
+.beads/beads.db
+.beads/beads.db-shm
+.beads/beads.db-wal
+.beads/last-touched
+

@@ -1,0 +1,37 @@
+<!-- @dsCard group="Components" viewport="700x260" name="Forms" subtitle="TextField (search/editor), MicButton" -->
+<html><head>
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css">
+<link rel="stylesheet" href="../../styles.css">
+<script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+body{margin:0;background:linear-gradient(180deg,var(--bg-sky-1),var(--bg-sky-3));padding:24px;font-family:var(--font-ui)}
+@keyframes lat-mic-pulse{0%{box-shadow:0 0 0 0 rgba(255,107,107,0.45)}100%{box-shadow:0 0 0 16px rgba(255,107,107,0)}}
+.row{display:flex;gap:20px;align-items:flex-start;margin-bottom:16px}
+</style>
+</head><body>
+<div id="root"></div>
+<script type="text/babel">
+const { TextField, MicButton } = window.Lateralus;
+function Demo() {
+  return (
+    <div>
+      <div className="row">
+        <TextField variant="search" placeholder="Search your journal" style={{width:260}} />
+      </div>
+      <div className="row">
+        <TextField variant="editor" value="A paperclip could hold a tiny sail for a boat made of..." wordCount={9} style={{width:340}} />
+        <div style={{display:'flex',flexDirection:'column',gap:16,alignItems:'center'}}>
+          <MicButton state="idle" />
+          <MicButton state="recording" />
+        </div>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script>
+</body></html>
