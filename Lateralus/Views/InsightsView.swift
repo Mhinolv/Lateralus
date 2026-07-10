@@ -5,7 +5,10 @@ import SwiftUI
 /// Training stats: streak, volume, the week's rhythm, and per-discipline
 /// balance.
 struct InsightsView: View {
+    @Environment(\.appNow) private var appNow
     @Query(sort: \Attempt.date, order: .reverse) private var attempts: [Attempt]
+
+    private var metrics: ActivityMetrics { ActivityMetrics(attempts: attempts, now: appNow) }
 
     var body: some View {
         NavigationStack {
@@ -29,9 +32,9 @@ struct InsightsView: View {
 
     private var statRow: some View {
         HStack(spacing: 12) {
-            statTile(value: "\(streak)", label: "Day streak", symbol: "flame.fill", tint: .orange)
-            statTile(value: "\(attempts.count)", label: "Ideas total", symbol: "lightbulb.fill", tint: .yellow)
-            statTile(value: "\(thisWeek)", label: "This week", symbol: "calendar", tint: Theme.success)
+            statTile(value: "\(metrics.streak)", label: "Day streak", symbol: "flame.fill", tint: .orange)
+            statTile(value: "\(metrics.total)", label: "Entries total", symbol: "lightbulb.fill", tint: .yellow)
+            statTile(value: "\(metrics.thisWeek)", label: "This week", symbol: "calendar", tint: Theme.success)
         }
     }
 
@@ -56,18 +59,18 @@ struct InsightsView: View {
         .glassCard(cornerRadius: 16)
     }
 
-    // MARK: - This week
+    // MARK: - Last seven days
 
-    /// Challenges solved per day over the last seven days.
+    /// Journal entries per day over the last seven days.
     private var weekChartCard: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("This week")
+            Text("Last 7 days")
                 .displayFont(20)
                 .foregroundStyle(Theme.ink)
-            Chart(lastWeek, id: \.day) { item in
+            Chart(metrics.lastSevenDays, id: \.day) { item in
                 BarMark(
                     x: .value("Day", item.day, unit: .day),
-                    y: .value("Solved", item.count)
+                    y: .value("Entries", item.count)
                 )
                 .foregroundStyle(Theme.accentContainer)
                 .cornerRadius(4)
@@ -99,7 +102,7 @@ struct InsightsView: View {
                 .displayFont(20)
                 .foregroundStyle(Theme.ink)
             ForEach(ChallengeType.games) { type in
-                let count = counts[type, default: 0]
+                let count = metrics.disciplineCounts[type, default: 0]
                 HStack(spacing: 10) {
                     Image(systemName: type.symbol)
                         .font(.caption)
@@ -131,47 +134,10 @@ struct InsightsView: View {
     }
 
     private func barFraction(_ count: Int) -> CGFloat {
-        let maxCount = max(counts.values.max() ?? 1, 1)
+        let maxCount = max(metrics.disciplineCounts.values.max() ?? 1, 1)
         return CGFloat(count) / CGFloat(maxCount)
     }
 
-    // MARK: - Derived values
-
-    private var counts: [ChallengeType: Int] {
-        Dictionary(grouping: attempts, by: \.type).mapValues(\.count)
-    }
-
-    private var streak: Int {
-        let calendar = Calendar.current
-        let days = Set(attempts.map { calendar.startOfDay(for: $0.date) })
-        var cursor = calendar.startOfDay(for: .now)
-        if !days.contains(cursor) {
-            cursor = calendar.date(byAdding: .day, value: -1, to: cursor)!
-        }
-        var count = 0
-        while days.contains(cursor) {
-            count += 1
-            cursor = calendar.date(byAdding: .day, value: -1, to: cursor)!
-        }
-        return count
-    }
-
-    private var thisWeek: Int {
-        let calendar = Calendar.current
-        guard let weekStart = calendar.dateInterval(of: .weekOfYear, for: .now)?.start else { return 0 }
-        return attempts.filter { $0.date >= weekStart }.count
-    }
-
-    /// Attempt counts for each of the last seven days, oldest first.
-    private var lastWeek: [(day: Date, count: Int)] {
-        let calendar = Calendar.current
-        let byDay = Dictionary(grouping: attempts) { calendar.startOfDay(for: $0.date) }
-        let today = calendar.startOfDay(for: .now)
-        return (0..<7).reversed().map { offset in
-            let day = calendar.date(byAdding: .day, value: -offset, to: today)!
-            return (day: day, count: byDay[day]?.count ?? 0)
-        }
-    }
 }
 
 #Preview {

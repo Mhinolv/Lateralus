@@ -2,13 +2,17 @@ import SwiftData
 import SwiftUI
 
 struct TodayView: View {
+    @Environment(\.appNow) private var appNow
     @Query(sort: \Attempt.date, order: .reverse) private var attempts: [Attempt]
     @State private var activeChallenge: ChallengeSelection?
 
-    private var daily: Challenge { ChallengeEngine.daily() }
+    private var metrics: ActivityMetrics { ActivityMetrics(attempts: attempts, now: appNow) }
+    private var daily: Challenge { ChallengeEngine.daily(for: appNow) }
 
     private var dailyDone: Bool {
-        attempts.contains { $0.isDaily && Calendar.current.isDateInToday($0.date) }
+        attempts.contains {
+            $0.isDaily && Calendar.autoupdatingCurrent.isDate($0.date, inSameDayAs: appNow)
+        }
     }
 
     var body: some View {
@@ -35,13 +39,13 @@ struct TodayView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text(Date.now, format: .dateTime.weekday(.wide).month(.wide).day())
+                Text(appNow, format: .dateTime.weekday(.wide).month(.wide).day())
                     .font(.footnote.weight(.semibold))
                     .textCase(.uppercase)
                     .kerning(1.4)
                     .foregroundStyle(Theme.inkTertiary)
                 Spacer()
-                StreakPill(days: streak)
+                StreakPill(days: metrics.streak)
             }
             Text("Think sideways.")
                 .displayFont(22)
@@ -152,22 +156,6 @@ struct TodayView: View {
         }
     }
 
-    /// Consecutive days with at least one attempt, counting back from today
-    /// (yesterday keeps the streak alive if today is still empty).
-    private var streak: Int {
-        let calendar = Calendar.current
-        let days = Set(attempts.map { calendar.startOfDay(for: $0.date) })
-        var cursor = calendar.startOfDay(for: .now)
-        if !days.contains(cursor) {
-            cursor = calendar.date(byAdding: .day, value: -1, to: cursor)!
-        }
-        var count = 0
-        while days.contains(cursor) {
-            count += 1
-            cursor = calendar.date(byAdding: .day, value: -1, to: cursor)!
-        }
-        return count
-    }
 }
 
 /// Identifiable wrapper so a challenge can drive a sheet.
