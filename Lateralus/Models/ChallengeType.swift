@@ -3,7 +3,7 @@ import SwiftUI
 /// Every kind of journal entry: the twelve playable disciplines plus Diary,
 /// the promptless free-writing entry. Raw values are stored in the journal,
 /// so they must remain stable across releases.
-enum ChallengeType: String, CaseIterable, Identifiable, Codable {
+enum ChallengeType: String, CaseIterable, Identifiable, Codable, Sendable {
     case alternateUse = "alternate_use"
     case constrainedUse = "constrained_use"
     case realityShift = "reality_shift"
@@ -17,13 +17,32 @@ enum ChallengeType: String, CaseIterable, Identifiable, Codable {
     case invention = "invention"
     case miniMyth = "mini_myth"
     case diary = "diary"
+    /// Used when a stored raw value came from a newer app version or is damaged.
+    case unknown = "unknown"
 
     var id: String { rawValue }
 
     /// The playable disciplines: everything the engine generates prompts for.
     /// Diary is journal-only and never appears in the daily rotation or
     /// practice grid.
-    static let games: [ChallengeType] = allCases.filter { $0 != .diary }
+    /// Immutable version-1 daily rotation. Never reorder this array in place;
+    /// introduce a new schedule version instead.
+    nonisolated static let games: [ChallengeType] = [
+        .alternateUse,
+        .constrainedUse,
+        .realityShift,
+        .fusion,
+        .backstory,
+        .perspectiveFlip,
+        .redefine,
+        .neologism,
+        .wordLink,
+        .positiveSpin,
+        .invention,
+        .miniMyth,
+    ]
+
+    nonisolated static let journalFilters: [ChallengeType] = games + [.diary]
 
     var title: String {
         switch self {
@@ -40,6 +59,7 @@ enum ChallengeType: String, CaseIterable, Identifiable, Codable {
         case .invention: "Inventions"
         case .miniMyth: "Mini Mythology"
         case .diary: "Diary"
+        case .unknown: "Unknown Challenge"
         }
     }
 
@@ -58,6 +78,7 @@ enum ChallengeType: String, CaseIterable, Identifiable, Codable {
         case .invention: "lightbulb"
         case .miniMyth: "scroll"
         case .diary: "book.pages"
+        case .unknown: "questionmark.circle"
         }
     }
 
@@ -77,6 +98,7 @@ enum ChallengeType: String, CaseIterable, Identifiable, Codable {
         case .invention: "Explain how it \u{201C}really\u{201D} works"
         case .miniMyth: "Write the myth behind a daily annoyance"
         case .diary: "Free writing, no prompt"
+        case .unknown: "A saved challenge from another app version"
         }
     }
 
@@ -110,6 +132,8 @@ enum ChallengeType: String, CaseIterable, Identifiable, Codable {
             "Write a short myth explaining why this everyday inconvenience was placed in the world."
         case .diary:
             "Write freely."
+        case .unknown:
+            "Review your saved response."
         }
     }
 
@@ -130,6 +154,7 @@ enum ChallengeType: String, CaseIterable, Identifiable, Codable {
         case .invention: Color(hex: 0xFFD43B)
         case .miniMyth: Color(hex: 0xB197FC)
         case .diary: Color(hex: 0xC2C1FF)
+        case .unknown: Color(hex: 0x918FA0)
         }
     }
 
@@ -138,7 +163,7 @@ enum ChallengeType: String, CaseIterable, Identifiable, Codable {
         switch self {
         case .realityShift, .neologism, .positiveSpin, .invention, .miniMyth, .diary, .constrainedUse:
             Color(hex: 0x10101A)
-        case .alternateUse, .fusion, .backstory, .perspectiveFlip, .redefine, .wordLink:
+        case .alternateUse, .fusion, .backstory, .perspectiveFlip, .redefine, .wordLink, .unknown:
             .white
         }
     }

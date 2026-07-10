@@ -73,7 +73,7 @@ struct JournalView: View {
         Menu {
             Picker("Challenge type", selection: $typeFilter) {
                 Text("All types").tag(ChallengeType?.none)
-                ForEach(ChallengeType.allCases) { type in
+                ForEach(ChallengeType.journalFilters) { type in
                     Label(type.title, systemImage: type.symbol)
                         .tag(ChallengeType?.some(type))
                 }

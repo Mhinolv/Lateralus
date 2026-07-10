@@ -3,7 +3,14 @@ import SwiftData
 import Testing
 @testable import Lateralus
 
+@MainActor
 struct ChallengeEngineTests {
+
+    @Test func scheduleAndContentVersionsAreExplicit() {
+        #expect(ChallengeEngine.scheduleVersion == 1)
+        #expect(ContentLibrary.version == 1)
+        #expect(ContentLibrary.versionFingerprint == 2_812_524_538_469_470_836)
+    }
 
     @Test func dailyChallengeIsDeterministic() {
         let date = Date(timeIntervalSince1970: 1_800_000_000)
@@ -22,6 +29,20 @@ struct ChallengeEngineTests {
         }
         #expect(seen.count == ChallengeType.games.count)
         #expect(!seen.contains(.diary))
+    }
+
+    @Test func sameLocalDateProducesSameChallengeAcrossTimeZones() {
+        let zones = ["Pacific/Honolulu", "America/Los_Angeles", "Europe/London", "Asia/Tokyo"]
+        let challenges = zones.compactMap { identifier -> Challenge? in
+            guard let zone = TimeZone(identifier: identifier) else { return nil }
+            var calendar = Calendar(identifier: .gregorian)
+            calendar.timeZone = zone
+            let date = calendar.date(from: DateComponents(year: 2027, month: 6, day: 15, hour: 12))!
+            return ChallengeEngine.daily(for: date, calendar: calendar)
+        }
+
+        #expect(challenges.count == zones.count)
+        #expect(Set(challenges).count == 1)
     }
 
     /// The daily sequence must not repeat a prompt combination within two
@@ -43,6 +64,26 @@ struct ChallengeEngineTests {
         // Featured days per type over two years.
         let needed = 730 / ChallengeType.games.count + 1
         #expect(ContentLibrary.combinationCount(for: type) >= needed)
+    }
+
+    /// The generator must actually traverse the entire space reported by
+    /// ContentLibrary, not a smaller synchronized subset of it.
+    @Test(arguments: ChallengeType.games)
+    func fullAdvertisedCombinationCycleIsUnique(type: ChallengeType) {
+        let count = ContentLibrary.combinationCount(for: type)
+        var seen = Set<Challenge>()
+        seen.reserveCapacity(count)
+
+        for occurrence in 0..<count {
+            let challenge = ChallengeEngine.challenge(type: type, occurrence: occurrence)
+            #expect(seen.insert(challenge).inserted, "Repeat at occurrence \(occurrence) for \(type)")
+        }
+
+        #expect(seen.count == count)
+        #expect(
+            ChallengeEngine.challenge(type: type, occurrence: count)
+                == ChallengeEngine.challenge(type: type, occurrence: 0)
+        )
     }
 
     @Test func fusionNeverPairsAConceptWithItself() {
@@ -76,7 +117,8 @@ struct ChallengeEngineTests {
 
     @Test func diaryIsNeverAGame() {
         #expect(!ChallengeType.games.contains(.diary))
-        #expect(ChallengeType.games.count == ChallengeType.allCases.count - 1)
+        #expect(!ChallengeType.games.contains(.unknown))
+        #expect(ChallengeType.games.count == ChallengeType.allCases.count - 2)
     }
 
     @Test func strideIsAlwaysCoprime() {
@@ -89,6 +131,7 @@ struct ChallengeEngineTests {
     }
 }
 
+@MainActor
 struct PersistenceTests {
     @Test func schemaVersionIsExplicit() {
         #expect(LateralusSchemaV1.versionIdentifier == Schema.Version(1, 0, 0))
@@ -142,7 +185,7 @@ struct PersistenceTests {
         #expect(fetched.first?.type == .fusion)
     }
 
-    @Test @MainActor func startupFailureIsRecoverable() throws {
+    @Test func startupFailureIsRecoverable() throws {
         enum ProbeError: Error { case unavailable }
         var invocation = 0
         let controller = PersistenceController {

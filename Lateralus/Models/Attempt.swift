@@ -37,8 +37,8 @@ enum LateralusSchemaV1: VersionedSchema {
         }
 
         /// Unknown future or damaged values remain visible as an explicit
-        /// fallback instead of crashing the journal.
-        var type: ChallengeType { ChallengeType(rawValue: typeRaw) ?? .alternateUse }
+        /// fallback instead of being mislabeled as another discipline.
+        var type: ChallengeType { ChallengeType(rawValue: typeRaw) ?? .unknown }
 
         /// Reconstructs the challenge this attempt answered.
         var challenge: Challenge {

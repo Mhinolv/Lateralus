@@ -16,7 +16,7 @@ struct Challenge: Identifiable, Hashable {
     var secondaryLabel: String? {
         switch type {
         case .alternateUse, .backstory, .redefine, .neologism,
-             .positiveSpin, .invention, .miniMyth, .diary: nil
+             .positiveSpin, .invention, .miniMyth, .diary, .unknown: nil
         case .constrainedUse: "Constraint"
         case .realityShift: "The twist"
         case .fusion: "Merge with"
