@@ -17,6 +17,6 @@ export function MicButton({ state = 'idle', onClick, style }) {
         ...style,
       },
     }, React.createElement('i', { className: `ph ${recording ? 'ph-fill' : ''} ph-microphone`.trim(), style: { fontSize: 22, color: '#fff' } })),
-    state === 'denied' && React.createElement('div', { style: { font: 'var(--text-caption)', color: 'var(--danger)', marginTop: 8, maxWidth: 220, textAlign: 'center' } }, 'Microphone access is off — enable it in iOS Settings to dictate your answer.')
+    state === 'denied' && React.createElement('div', { style: { font: 'var(--text-caption)', color: 'var(--danger)', marginTop: 8, maxWidth: 220, textAlign: 'center' } }, 'Microphone access is off — enable it in iOS Settings to record a voice note.')
   );
 }

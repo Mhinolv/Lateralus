@@ -12,12 +12,13 @@ extension AVAudioRecorder: AudioRecordingSession {}
 
 /// Owns resources whose cleanup must remain safe when an actor-isolated owner
 /// is released. Each resource is still mutated only from the main actor.
-private final class VoiceNoteCleanup: @unchecked Sendable {
+@MainActor
+private final class VoiceNoteCleanup {
     var timer: Timer?
     var startTask: Task<Void, Never>?
     var interruptionObserver: NSObjectProtocol?
 
-    deinit {
+    isolated deinit {
         if let interruptionObserver {
             NotificationCenter.default.removeObserver(interruptionObserver)
         }

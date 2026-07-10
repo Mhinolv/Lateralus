@@ -1,4 +1,4 @@
-<!-- @dsCard group="Components" viewport="700x480" name="Challenge" subtitle="TypeChip, TypeIcon, ModifierPanel, CoachPanel" -->
+<!-- @dsCard group="Components" viewport="700x400" name="Challenge" subtitle="TypeChip, TypeIcon, ModifierPanel" -->
 <html><head>
 <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
 <link rel="stylesheet" href="../../styles.css">
@@ -14,7 +14,7 @@ body{margin:0;background:linear-gradient(180deg,var(--bg-sky-1),var(--bg-sky-3))
 </head><body>
 <div id="root"></div>
 <script type="text/babel">
-const { TypeChip, TypeIcon, ModifierPanel, CoachPanel } = window.Lateralus;
+const { TypeChip, TypeIcon, ModifierPanel } = window.Lateralus;
 function Demo() {
   return (
     <div>
@@ -27,8 +27,6 @@ function Demo() {
         <TypeIcon type="fusion" /><TypeIcon type="backstory" /><TypeIcon type="perspective" /><TypeIcon type="redefine" />
       </div>
       <ModifierPanel kind="twist" value="...but it fits in your pocket." tint="var(--type-reality-1)" style={{maxWidth:400}} />
-      <div style={{height:16}} />
-      <CoachPanel state="done" notes="Nice instinct pairing weight with warmth. Push further: what if it also had to be edible?" style={{maxWidth:420}} />
     </div>
   );
 }

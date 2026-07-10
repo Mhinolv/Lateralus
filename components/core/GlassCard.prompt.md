@@ -1,4 +1,4 @@
-GlassCard is the base translucent surface used for every card in Lateralus — daily card, practice cards, prompt/response cards, coach card.
+GlassCard is the base translucent surface used for every card in Lateralus — daily card, practice cards, and prompt/response cards.
 
 ```jsx
 <GlassCard variant="raised" radius="xl" glow="var(--type-reality-1)">

@@ -1,5 +1,5 @@
 /**
- * @startingPoint section="Challenge" subtitle="Type identity chip + icon glyph, all 8 disciplines" viewport="700x200"
+ * @startingPoint section="Challenge" subtitle="Type identity chip + icon glyph, all 12 disciplines" viewport="700x200"
  */
 export interface TypeChipProps {
   /** One of: alt, coin, twist, reality, fusion, backstory, perspective, redefine. */

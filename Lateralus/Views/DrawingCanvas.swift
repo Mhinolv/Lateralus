@@ -18,6 +18,9 @@ struct DrawingCanvas: UIViewRepresentable {
         canvas.drawingPolicy = .anyInput
         canvas.backgroundColor = UIColor(white: 0.96, alpha: 1)
         canvas.overrideUserInterfaceStyle = .light
+        canvas.isAccessibilityElement = true
+        canvas.accessibilityLabel = "Drawing canvas"
+        canvas.accessibilityIdentifier = "Drawing canvas"
         canvas.delegate = context.coordinator
 
         let picker = PKToolPicker()

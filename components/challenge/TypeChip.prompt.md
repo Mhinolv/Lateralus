@@ -1,4 +1,4 @@
-Gradient-filled identity chip for one of the 8 challenge disciplines — used on the daily card, practice grid, journal rows, and prompt cards. `TypeIcon` is the square glyph-only variant (practice grid tiles).
+Gradient-filled identity chip for one of the 12 challenge disciplines — used on the daily card, practice grid, journal rows, and prompt cards. `TypeIcon` is the square glyph-only variant (practice grid tiles).
 
 ```jsx
 <TypeChip type="reality" />

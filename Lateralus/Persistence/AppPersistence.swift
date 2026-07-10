@@ -44,7 +44,14 @@ final class PersistenceController {
     private(set) var container: ModelContainer?
     private(set) var errorMessage: String?
 
-    init(factory: @MainActor @escaping () throws -> ModelContainer = { try AppPersistence.makeContainer() }) {
+    init(factory: @MainActor @escaping () throws -> ModelContainer = {
+        #if DEBUG
+        let isUITesting = ProcessInfo.processInfo.arguments.contains("-ui-testing")
+        return try AppPersistence.makeContainer(inMemoryOnly: isUITesting)
+        #else
+        return try AppPersistence.makeContainer()
+        #endif
+    }) {
         self.factory = factory
         load()
     }
