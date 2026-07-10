@@ -17,6 +17,8 @@ struct ChallengeView: View {
     @State private var drawing = PKDrawing()
     @State private var showCanvas = false
     @State private var savedAttempt: Attempt?
+    @State private var saveErrorMessage = ""
+    @State private var showSaveError = false
     @FocusState private var editorFocused: Bool
 
     init(challenge: Challenge, isDaily: Bool) {
@@ -81,6 +83,11 @@ struct ChallengeView: View {
             } else {
                 recorder.stop()
             }
+        }
+        .alert("Couldn’t Save", isPresented: $showSaveError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(saveErrorMessage)
         }
     }
 
@@ -219,7 +226,8 @@ struct ChallengeView: View {
                     .font(.body)
                     .foregroundStyle(Theme.ink)
             }
-            if let url = recorder.fileURL {
+            if let file = savedAttempt?.voiceNoteFile,
+               let url = AttachmentStore.live.url(forFile: file) {
                 Button {
                     player.toggle(url: url)
                 } label: {
@@ -267,15 +275,19 @@ struct ChallengeView: View {
     private func save() {
         recorder.stop()
         editorFocused = false
-        let attempt = Attempt(
-            challenge: challenge,
-            responseText: text.trimmingCharacters(in: .whitespacesAndNewlines),
-            isDaily: isDaily
-        )
-        attempt.voiceNoteFile = recorder.fileURL?.lastPathComponent
-        attempt.drawingData = drawing.strokes.isEmpty ? nil : drawing.dataRepresentation()
-        modelContext.insert(attempt)
-        withAnimation(.snappy) { savedAttempt = attempt }
+        do {
+            let attempt = try AttemptRepository(context: modelContext).save(
+                challenge: challenge,
+                responseText: text.trimmingCharacters(in: .whitespacesAndNewlines),
+                isDaily: isDaily,
+                temporaryVoiceNoteURL: recorder.fileURL,
+                drawingData: drawing.strokes.isEmpty ? nil : drawing.dataRepresentation()
+            )
+            withAnimation(.snappy) { savedAttempt = attempt }
+        } catch {
+            saveErrorMessage = error.localizedDescription
+            showSaveError = true
+        }
     }
 
     private func close() {

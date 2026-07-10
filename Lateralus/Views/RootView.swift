@@ -2,6 +2,8 @@ import SwiftData
 import SwiftUI
 
 struct RootView: View {
+    @Environment(\.modelContext) private var modelContext
+
     var body: some View {
         TabView {
             Tab("Today", systemImage: "sun.max.fill") {
@@ -15,6 +17,9 @@ struct RootView: View {
             }
         }
         .tint(Theme.accent)
+        .task {
+            try? AttemptRepository(context: modelContext).reconcileAttachments()
+        }
     }
 }
 

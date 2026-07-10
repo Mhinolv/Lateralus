@@ -10,6 +10,8 @@ struct JournalView: View {
     @State private var favoritesOnly = false
     @State private var typeFilter: ChallengeType?
     @State private var showDiary = false
+    @State private var persistenceErrorMessage = ""
+    @State private var showPersistenceError = false
 
     private var filtered: [Attempt] {
         attempts.filter { attempt in
@@ -66,6 +68,11 @@ struct JournalView: View {
         .sheet(isPresented: $showDiary) {
             DiaryView()
         }
+        .alert("Journal Update Failed", isPresented: $showPersistenceError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(persistenceErrorMessage)
+        }
     }
 
     /// Filter the journal down to one challenge type.
@@ -99,7 +106,7 @@ struct JournalView: View {
                         .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
                         .swipeActions(edge: .leading) {
                             Button {
-                                attempt.isFavorite.toggle()
+                                toggleFavorite(attempt)
                             } label: {
                                 Image(systemName: attempt.isFavorite ? "star.slash" : "star.fill")
                             }
@@ -144,10 +151,21 @@ struct JournalView: View {
 
     /// Removes the attempt and any voice note file it owns.
     private func delete(_ attempt: Attempt) {
-        if let file = attempt.voiceNoteFile {
-            try? FileManager.default.removeItem(at: VoiceNoteRecorder.url(forFile: file))
+        do {
+            try AttemptRepository(context: modelContext).delete(attempt)
+        } catch {
+            persistenceErrorMessage = error.localizedDescription
+            showPersistenceError = true
         }
-        modelContext.delete(attempt)
+    }
+
+    private func toggleFavorite(_ attempt: Attempt) {
+        do {
+            try AttemptRepository(context: modelContext).toggleFavorite(attempt)
+        } catch {
+            persistenceErrorMessage = error.localizedDescription
+            showPersistenceError = true
+        }
     }
 }
 

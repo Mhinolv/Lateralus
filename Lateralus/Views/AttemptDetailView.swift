@@ -5,7 +5,10 @@ import SwiftUI
 /// text, voice note, and drawing alike.
 struct AttemptDetailView: View {
     @Bindable var attempt: Attempt
+    @Environment(\.modelContext) private var modelContext
     @State private var player = VoiceNotePlayer()
+    @State private var persistenceErrorMessage = ""
+    @State private var showPersistenceError = false
 
     var body: some View {
         ZStack {
@@ -24,12 +27,17 @@ struct AttemptDetailView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
-                    attempt.isFavorite.toggle()
+                    toggleFavorite()
                 } label: {
                     Image(systemName: attempt.isFavorite ? "star.fill" : "star")
                 }
                 .tint(.yellow)
             }
+        }
+        .alert("Journal Update Failed", isPresented: $showPersistenceError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(persistenceErrorMessage)
         }
     }
 
@@ -87,9 +95,11 @@ struct AttemptDetailView: View {
                     .foregroundStyle(Theme.ink)
                     .textSelection(.enabled)
             }
-            if let file = attempt.voiceNoteFile {
+            if let file = attempt.voiceNoteFile,
+               let url = AttachmentStore.live.url(forFile: file),
+               AttachmentStore.live.containsVoiceNote(named: file) {
                 Button {
-                    player.toggle(url: VoiceNoteRecorder.url(forFile: file))
+                    player.toggle(url: url)
                 } label: {
                     Label(
                         player.isPlaying ? "Playing…" : "Play voice note",
@@ -107,5 +117,14 @@ struct AttemptDetailView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .glassCard()
         .onDisappear { player.stop() }
+    }
+
+    private func toggleFavorite() {
+        do {
+            try AttemptRepository(context: modelContext).toggleFavorite(attempt)
+        } catch {
+            persistenceErrorMessage = error.localizedDescription
+            showPersistenceError = true
+        }
     }
 }

@@ -15,6 +15,8 @@ struct DiaryView: View {
     @State private var drawing = PKDrawing()
     @State private var showCanvas = false
     @State private var saved = false
+    @State private var saveErrorMessage = ""
+    @State private var showSaveError = false
     @FocusState private var editorFocused: Bool
 
     private var canSave: Bool {
@@ -98,22 +100,31 @@ struct DiaryView: View {
                 recorder.discard()
             }
         }
+        .alert("Couldn’t Save", isPresented: $showSaveError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(saveErrorMessage)
+        }
     }
 
     private func save() {
         recorder.stop()
         editorFocused = false
         let entry = Challenge(type: .diary, primary: "Diary", secondary: nil, emoji: "📓")
-        let attempt = Attempt(
-            challenge: entry,
-            responseText: text.trimmingCharacters(in: .whitespacesAndNewlines),
-            isDaily: false
-        )
-        attempt.voiceNoteFile = recorder.fileURL?.lastPathComponent
-        attempt.drawingData = drawing.strokes.isEmpty ? nil : drawing.dataRepresentation()
-        modelContext.insert(attempt)
-        saved = true
-        dismiss()
+        do {
+            _ = try AttemptRepository(context: modelContext).save(
+                challenge: entry,
+                responseText: text.trimmingCharacters(in: .whitespacesAndNewlines),
+                isDaily: false,
+                temporaryVoiceNoteURL: recorder.fileURL,
+                drawingData: drawing.strokes.isEmpty ? nil : drawing.dataRepresentation()
+            )
+            saved = true
+            dismiss()
+        } catch {
+            saveErrorMessage = error.localizedDescription
+            showSaveError = true
+        }
     }
 
     private func close() {
