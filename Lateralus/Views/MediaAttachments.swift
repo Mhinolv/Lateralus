@@ -16,11 +16,17 @@ struct MediaAttachments: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 12) {
                 pill(
-                    icon: recorder.isRecording ? "stop.fill" : "mic.fill",
-                    label: recorder.isRecording
-                        ? "Recording · \(voiceNoteDuration(recorder.duration))"
-                        : (recorder.fileURL != nil ? "Voice note · \(voiceNoteDuration(recorder.duration))" : "Voice note"),
-                    active: recorder.isRecording || recorder.fileURL != nil
+                    icon: recorder.isRequestingPermission
+                        ? "hourglass"
+                        : (recorder.isRecording ? "stop.fill" : "mic.fill"),
+                    label: recorder.isRequestingPermission
+                        ? "Requesting access…"
+                        : (recorder.isRecording
+                            ? "Recording · \(voiceNoteDuration(recorder.duration))"
+                            : (recorder.fileURL != nil
+                                ? "Voice note · \(voiceNoteDuration(recorder.duration))"
+                                : "Voice note")),
+                    active: recorder.isRequestingPermission || recorder.isRecording || recorder.fileURL != nil
                 ) {
                     player.stop()
                     recorder.toggle()
@@ -93,7 +99,10 @@ struct MediaAttachments: View {
     }
 
     private var recorderMessage: String? {
-        switch recorder.state {
+        if recorder.didReachMaximumDuration {
+            return "The five-minute maximum was reached and the recording was stopped."
+        }
+        return switch recorder.state {
         case .denied: "Enable the microphone in Settings"
         case .failed(let message): message
         default: nil

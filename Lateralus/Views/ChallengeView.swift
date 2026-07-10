@@ -10,6 +10,7 @@ struct ChallengeView: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.scenePhase) private var scenePhase
 
     @State private var text = ""
     @State private var recorder = VoiceNoteRecorder()
@@ -19,6 +20,8 @@ struct ChallengeView: View {
     @State private var savedAttempt: Attempt?
     @State private var saveErrorMessage = ""
     @State private var showSaveError = false
+    @State private var showDiscardConfirmation = false
+    @State private var showNewPromptConfirmation = false
     @FocusState private var editorFocused: Bool
 
     init(challenge: Challenge, isDaily: Bool) {
@@ -52,17 +55,12 @@ struct ChallengeView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Close") { close() }
+                    Button("Close") { requestClose() }
                 }
                 if !isDaily && savedAttempt == nil {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button {
-                            withAnimation(.snappy) {
-                                challenge = ChallengeEngine.practice(type: challenge.type)
-                                text = ""
-                                recorder.discard()
-                                drawing = PKDrawing()
-                            }
+                            requestNewPrompt()
                         } label: {
                             Label("New prompt", systemImage: "dice")
                         }
@@ -84,10 +82,32 @@ struct ChallengeView: View {
                 recorder.stop()
             }
         }
+        .onChange(of: scenePhase) { _, phase in
+            guard phase != .active else { return }
+            recorder.stop()
+            player.stop()
+        }
+        .interactiveDismissDisabled(hasUnsavedContent)
         .alert("Couldn’t Save", isPresented: $showSaveError) {
             Button("OK", role: .cancel) {}
         } message: {
             Text(saveErrorMessage)
+        }
+        .confirmationDialog(
+            "Discard this response?",
+            isPresented: $showDiscardConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Discard Response", role: .destructive) { closeImmediately() }
+            Button("Keep Editing", role: .cancel) {}
+        }
+        .confirmationDialog(
+            "Start a new prompt and discard this response?",
+            isPresented: $showNewPromptConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Discard and Continue", role: .destructive) { loadNewPrompt() }
+            Button("Keep This Response", role: .cancel) {}
         }
     }
 
@@ -243,7 +263,7 @@ struct ChallengeView: View {
                 DrawingImage(data: drawing.dataRepresentation())
             }
 
-            Button("Done") { close() }
+            Button("Done") { closeImmediately() }
                 .font(.headline)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
@@ -283,6 +303,7 @@ struct ChallengeView: View {
                 temporaryVoiceNoteURL: recorder.fileURL,
                 drawingData: drawing.strokes.isEmpty ? nil : drawing.dataRepresentation()
             )
+            recorder.markCommitted()
             withAnimation(.snappy) { savedAttempt = attempt }
         } catch {
             saveErrorMessage = error.localizedDescription
@@ -290,7 +311,40 @@ struct ChallengeView: View {
         }
     }
 
-    private func close() {
+    private var hasUnsavedContent: Bool {
+        savedAttempt == nil && (
+            !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                || recorder.fileURL != nil
+                || !drawing.strokes.isEmpty
+        )
+    }
+
+    private func requestClose() {
+        if hasUnsavedContent {
+            showDiscardConfirmation = true
+        } else {
+            closeImmediately()
+        }
+    }
+
+    private func requestNewPrompt() {
+        if hasUnsavedContent {
+            showNewPromptConfirmation = true
+        } else {
+            loadNewPrompt()
+        }
+    }
+
+    private func loadNewPrompt() {
+        withAnimation(.snappy) {
+            challenge = ChallengeEngine.practice(type: challenge.type)
+            text = ""
+            recorder.discard()
+            drawing = PKDrawing()
+        }
+    }
+
+    private func closeImmediately() {
         player.stop()
         if savedAttempt == nil {
             recorder.discard()

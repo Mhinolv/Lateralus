@@ -8,6 +8,7 @@ import SwiftUI
 struct DiaryView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.scenePhase) private var scenePhase
 
     @State private var text = ""
     @State private var recorder = VoiceNoteRecorder()
@@ -17,6 +18,7 @@ struct DiaryView: View {
     @State private var saved = false
     @State private var saveErrorMessage = ""
     @State private var showSaveError = false
+    @State private var showDiscardConfirmation = false
     @FocusState private var editorFocused: Bool
 
     private var canSave: Bool {
@@ -86,7 +88,7 @@ struct DiaryView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Close") { close() }
+                    Button("Close") { requestClose() }
                 }
             }
             .onAppear { editorFocused = true }
@@ -100,10 +102,24 @@ struct DiaryView: View {
                 recorder.discard()
             }
         }
+        .onChange(of: scenePhase) { _, phase in
+            guard phase != .active else { return }
+            recorder.stop()
+            player.stop()
+        }
+        .interactiveDismissDisabled(hasUnsavedContent)
         .alert("Couldn’t Save", isPresented: $showSaveError) {
             Button("OK", role: .cancel) {}
         } message: {
             Text(saveErrorMessage)
+        }
+        .confirmationDialog(
+            "Discard this diary entry?",
+            isPresented: $showDiscardConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Discard Entry", role: .destructive) { closeImmediately() }
+            Button("Keep Editing", role: .cancel) {}
         }
     }
 
@@ -119,6 +135,7 @@ struct DiaryView: View {
                 temporaryVoiceNoteURL: recorder.fileURL,
                 drawingData: drawing.strokes.isEmpty ? nil : drawing.dataRepresentation()
             )
+            recorder.markCommitted()
             saved = true
             dismiss()
         } catch {
@@ -127,7 +144,23 @@ struct DiaryView: View {
         }
     }
 
-    private func close() {
+    private var hasUnsavedContent: Bool {
+        !saved && (
+            !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                || recorder.fileURL != nil
+                || !drawing.strokes.isEmpty
+        )
+    }
+
+    private func requestClose() {
+        if hasUnsavedContent {
+            showDiscardConfirmation = true
+        } else {
+            closeImmediately()
+        }
+    }
+
+    private func closeImmediately() {
         player.stop()
         recorder.discard()
         dismiss()
