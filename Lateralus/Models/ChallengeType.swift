@@ -107,33 +107,85 @@ enum ChallengeType: String, CaseIterable, Identifiable, Codable, Sendable {
     var directive: String {
         switch self {
         case .alternateUse:
-            "Invent a genuinely different use for this object, as far from its intended purpose as you can get."
+            "Generate a few possible uses for this object, then develop the one furthest from its intended purpose."
         case .constrainedUse:
-            "Invent a new use for this object that satisfies the constraint below."
+            "Invent a new use for this object that works because of the constraint below, not in spite of it."
         case .realityShift:
-            "Walk through what breaks, adapts, and becomes possible once this scenario's one rule of reality changes."
+            "Trace the immediate effect, human adaptation, and long-term possibility created by this changed rule."
         case .fusion:
             "Combine these two into one invention, service, or idea, making the combination essential rather than decorative."
         case .backstory:
-            "Invent the most plausible chain of events that ends in this exact scene."
+            "Build a plausible chain of cause and effect that accounts for every strange detail in this scene."
         case .perspectiveFlip:
-            "Describe this scenario entirely from the point of view given below."
+            "Describe this scenario only through what this observer can sense, want, and misunderstand."
         case .redefine:
-            "Pretend this word never had a meaning, and define it fresh so the new meaning feels inevitable."
+            "Give this familiar word a fresh definition, then make the new meaning feel natural in use."
         case .neologism:
-            "There's no word for this, so coin one that explains itself and sounds like it was always there."
+            "Coin a pronounceable word for this missing idea and show how someone would naturally use it."
         case .wordLink:
-            "Find a single word or idea that quietly ties these two together, and explain the connection you found."
+            "Find one word that connects these two, then explain why the connection holds."
         case .positiveSpin:
-            "Take this genuinely terrible idea and reframe it into something surprisingly useful."
+            "Keep this idea's defining flaw, but find a person or situation that turns the flaw into an advantage."
         case .invention:
-            "Invent a confidently wrong, completely made-up explanation for how this object actually works."
+            "Invent a confidently wrong mechanism for this object and support it with one convincing piece of fake evidence."
         case .miniMyth:
-            "Write a short myth explaining why this everyday inconvenience was placed in the world."
+            "Write a short myth with a supernatural culprit, an original offense, and the inconvenience that became its curse."
         case .diary:
             "Write freely."
         case .unknown:
             "Review your saved response."
+        }
+    }
+
+    /// Lightweight, game-specific scaffolding. These are suggestions rather
+    /// than required fields so a challenge can still be answered quickly.
+    var responseGuide: [String] {
+        switch self {
+        case .alternateUse:
+            ["Imagine several uses", "Choose the least obvious", "Show how it would work"]
+        case .constrainedUse:
+            ["Name the new use", "Use the constraint", "Explain why it works"]
+        case .realityShift:
+            ["Immediate effect", "How people adapt", "What becomes possible"]
+        case .fusion:
+            ["What the first contributes", "What the second contributes", "Why both are essential"]
+        case .backstory:
+            ["The initiating event", "The chain of consequences", "The final strange detail"]
+        case .perspectiveFlip:
+            ["What it senses", "What it wants", "What it misunderstands"]
+        case .redefine:
+            ["A fresh definition", "A natural example sentence"]
+        case .neologism:
+            ["The new word", "How it is pronounced", "A sample sentence"]
+        case .wordLink:
+            ["One connecting word", "Why it fits both prompts"]
+        case .positiveSpin:
+            ["Preserve the flaw", "Find who benefits", "Describe the useful result"]
+        case .invention:
+            ["The secret mechanism", "How it produces the result", "One piece of fake evidence"]
+        case .miniMyth:
+            ["A supernatural culprit", "The original offense", "The lasting curse"]
+        case .diary, .unknown:
+            []
+        }
+    }
+
+    /// An optional second nudge for players who want a harder round.
+    var stretchPrompt: String? {
+        switch self {
+        case .alternateUse: "Could the object work without being physically altered?"
+        case .constrainedUse: "Make the constraint the idea's greatest advantage."
+        case .realityShift: "What second-order consequence would nobody predict at first?"
+        case .fusion: "Remove either half. If the idea still works, fuse them more deeply."
+        case .backstory: "Make the least noticeable detail the key to the explanation."
+        case .perspectiveFlip: "Let the observer reach a believable but completely wrong conclusion."
+        case .redefine: "Use the new meaning in a sentence without explaining it."
+        case .neologism: "Make the word's sound hint at its meaning."
+        case .wordLink: "Find an indirect connection rather than a shared category."
+        case .positiveSpin: "Improve the idea without removing or repairing its central flaw."
+        case .invention: "Add a technical-sounding detail that almost makes the explanation credible."
+        case .miniMyth: "Make the punishment fit the original offense."
+        case .diary, .unknown: nil
         }
     }
 

@@ -16,7 +16,7 @@ The daily rotation and practice grid contain twelve games:
 | **Perspective Flip** | Retell an ordinary situation from an alien viewpoint. |
 | **Redefine** | Give a familiar word a fresh meaning. |
 | **Coin a Word** | Invent a word for a missing definition. |
-| **Common Thread** | Find and explain one link between two words. |
+| **Common Thread** | Find one connecting word, then explain why it fits both prompts. |
 | **Positive Spin** | Turn a terrible idea into something useful. |
 | **Inventions** | Invent a confidently wrong explanation for an object. |
 | **Mini Mythology** | Write the myth behind an everyday inconvenience. |
@@ -28,6 +28,7 @@ Diary is a thirteenth, prompt-free journal entry type. It is not part of the dai
 - **Daily challenge** — one deterministic prompt per local calendar day. The versioned schedule walks the full advertised combination space without repeating within two years.
 - **Practice** — generate a fresh prompt for any of the twelve games.
 - **Flexible responses** — save text, a PencilKit drawing, a voice-note recording, or any combination of them. Voice notes are recordings attached to entries; they are not transcribed.
+- **Game-specific guidance** — every challenge offers a short response shape and an optional stretch prompt to help players move beyond their first obvious idea without scoring creativity.
 - **Journal** — local SwiftData history with search, favorites, filtering, deletion, and recoverable startup.
 - **Insights** — entry totals, calendar-week activity, trailing seven days, streak, and per-game balance. Diary entries count as creative activity but not as a game discipline.
 - **Privacy** — data stays in the app container. The application contains no networking or third-party dependencies.

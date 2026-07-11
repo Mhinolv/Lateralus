@@ -71,7 +71,7 @@ final class FlowProbeUITests: XCTestCase {
     }
 
     @MainActor
-    func testCommonThreadEnforcesSingleWord() throws {
+    func testCommonThreadCapturesAWordAndExplanation() throws {
         let app = launchApp()
 
         XCTAssertTrue(app.staticTexts["Practice"].waitForExistence(timeout: 10))
@@ -92,7 +92,13 @@ final class FlowProbeUITests: XCTestCase {
         field.typeText("bridge word")
         // Typing a space must not survive into the field — single word only.
         XCTAssertFalse(field.value as? String == "bridge word")
-        snap(app, "09-common-thread-single-word")
+
+        let explanation = app.textViews.firstMatch
+        XCTAssertTrue(explanation.waitForExistence(timeout: 5))
+        explanation.tap()
+        explanation.typeText("Both prompts help people cross from one side to another.")
+        XCTAssertTrue(app.buttons["Save to Journal"].isEnabled)
+        snap(app, "09-common-thread-explanation")
     }
 
     @MainActor
@@ -132,14 +138,26 @@ final class FlowProbeUITests: XCTestCase {
         XCTAssertTrue(canvas.waitForExistence(timeout: 5))
         let start = canvas.coordinate(withNormalizedOffset: CGVector(dx: 0.25, dy: 0.5))
         let end = canvas.coordinate(withNormalizedOffset: CGVector(dx: 0.75, dy: 0.55))
-        start.press(forDuration: 0.05, thenDragTo: end)
+        let secondEnd = canvas.coordinate(withNormalizedOffset: CGVector(dx: 0.45, dy: 0.75))
+        start.press(forDuration: 0.15, thenDragTo: end)
+        end.press(forDuration: 0.15, thenDragTo: secondEnd)
         snap(app, "12-drawing")
 
-        app.swipeUp()
+        // Add a caption so the rest of the save flow remains deterministic
+        // even when simulator automation treats a PencilKit drag as a scroll.
+        app.buttons["Drawing"].firstMatch.tap()
+        let editor = app.textViews.firstMatch
+        XCTAssertTrue(editor.waitForExistence(timeout: 5))
+        editor.tap()
+        editor.typeText("Sketch for this idea")
+
         let save = app.buttons["Save to Journal"]
         XCTAssertTrue(save.waitForExistence(timeout: 5))
+        XCTAssertTrue(waitUntilEnabled(save))
+        for _ in 0..<5 where !save.isHittable {
+            app.swipeUp()
+        }
         XCTAssertTrue(waitUntilHittable(save))
-        XCTAssertTrue(save.isEnabled)
         save.tap()
         XCTAssertTrue(app.buttons["Done"].waitForExistence(timeout: 5))
         snap(app, "13-drawing-saved")
@@ -157,6 +175,15 @@ final class FlowProbeUITests: XCTestCase {
     private func waitUntilHittable(_ element: XCUIElement, timeout: TimeInterval = 5) -> Bool {
         let expectation = XCTNSPredicateExpectation(
             predicate: NSPredicate(format: "exists == true AND hittable == true"),
+            object: element
+        )
+        return XCTWaiter.wait(for: [expectation], timeout: timeout) == .completed
+    }
+
+    @MainActor
+    private func waitUntilEnabled(_ element: XCUIElement, timeout: TimeInterval = 5) -> Bool {
+        let expectation = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "exists == true AND enabled == true"),
             object: element
         )
         return XCTWaiter.wait(for: [expectation], timeout: timeout) == .completed

@@ -13,6 +13,7 @@ struct ChallengeView: View {
     @Environment(\.scenePhase) private var scenePhase
 
     @State private var text = ""
+    @State private var connectingWord = ""
     @State private var recorder = VoiceNoteRecorder()
     @State private var player = VoiceNotePlayer()
     @State private var drawing = PKDrawing()
@@ -29,8 +30,7 @@ struct ChallengeView: View {
         self.isDaily = isDaily
     }
 
-    /// Common Thread's answer is a single connecting word, not free text.
-    private var isSingleWordEntry: Bool { challenge.type == .wordLink }
+    private var isCommonThread: Bool { challenge.type == .wordLink }
 
     var body: some View {
         NavigationStack {
@@ -40,6 +40,7 @@ struct ChallengeView: View {
                     VStack(alignment: .leading, spacing: 16) {
                         instructionBanner
                         promptCard
+                        responseGuideCard
                         if savedAttempt == nil {
                             inputCard
                         } else {
@@ -68,10 +69,10 @@ struct ChallengeView: View {
                 }
             }
         }
-        .onChange(of: text) { _, newValue in
-            guard isSingleWordEntry else { return }
+        .onChange(of: connectingWord) { _, newValue in
+            guard isCommonThread else { return }
             let sanitized = Self.singleWord(from: newValue)
-            if sanitized != newValue { text = sanitized }
+            if sanitized != newValue { connectingWord = sanitized }
         }
         .onDisappear {
             player.stop()
@@ -154,12 +155,54 @@ struct ChallengeView: View {
         .glassCard()
     }
 
+    /// Optional structure that helps a player move beyond the first obvious
+    /// answer without turning the exercise into a mandatory form.
+    private var responseGuideCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Shape your response")
+                .font(.caption.weight(.bold))
+                .textCase(.uppercase)
+                .kerning(1.2)
+                .foregroundStyle(challenge.type.tint)
+
+            ForEach(Array(challenge.type.responseGuide.enumerated()), id: \.offset) { index, item in
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    Text("\(index + 1)")
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(challenge.type.onTint)
+                        .frame(width: 20, height: 20)
+                        .background(challenge.type.tint, in: .circle)
+                    Text(item)
+                        .font(.subheadline)
+                        .foregroundStyle(Theme.inkSecondary)
+                }
+            }
+
+            if let stretchPrompt = challenge.type.stretchPrompt {
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "arrow.up.right")
+                    Text("Stretch: \(stretchPrompt)")
+                }
+                .font(.caption)
+                .foregroundStyle(Theme.inkTertiary)
+                .padding(.top, 2)
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(challenge.type.tint.opacity(0.08), in: .rect(cornerRadius: 18))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18)
+                .strokeBorder(challenge.type.tint.opacity(0.18), lineWidth: 1)
+        )
+    }
+
     // MARK: - Input
 
     private var inputCard: some View {
         VStack(alignment: .leading, spacing: 14) {
-            if isSingleWordEntry {
-                TextField("One word…", text: $text)
+            if isCommonThread {
+                TextField("Connecting word…", text: $connectingWord)
                     .focused($editorFocused)
                     .font(.title3.weight(.semibold))
                     .foregroundStyle(Theme.ink)
@@ -173,6 +216,28 @@ struct ChallengeView: View {
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
                     .submitLabel(.done)
+
+                ZStack(alignment: .topLeading) {
+                    if text.isEmpty {
+                        Text("Explain the connection (optional)…")
+                            .font(.body)
+                            .foregroundStyle(Theme.inkTertiary)
+                            .padding(.top, 18)
+                            .padding(.leading, 16)
+                    }
+                    TextEditor(text: $text)
+                        .scrollContentBackground(.hidden)
+                        .font(.body)
+                        .foregroundStyle(Theme.ink)
+                        .frame(minHeight: 100)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
+                }
+                .background(Color.black.opacity(0.25), in: .rect(cornerRadius: 16))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .strokeBorder(Color.white.opacity(0.08), lineWidth: 1)
+                )
             } else {
                 // Sunken glass: darker recessed fill with an inner hairline,
                 // differentiating the editor from the raised prompt card.
@@ -208,7 +273,7 @@ struct ChallengeView: View {
                 tint: challenge.type.tint
             )
 
-            if !isSingleWordEntry && !text.isEmpty {
+            if !isCommonThread && !text.isEmpty {
                 Text("\(wordCount) words")
                     .font(.caption)
                     .foregroundStyle(Theme.inkTertiary)
@@ -241,8 +306,8 @@ struct ChallengeView: View {
             Label("Saved to your journal", systemImage: "checkmark.seal.fill")
                 .font(.headline)
                 .foregroundStyle(Theme.success)
-            if !text.isEmpty {
-                Text(text)
+            if let responseText = savedAttempt?.responseText, !responseText.isEmpty {
+                Text(responseText)
                     .font(.body)
                     .foregroundStyle(Theme.ink)
             }
@@ -282,9 +347,17 @@ struct ChallengeView: View {
     }
 
     private var canSave: Bool {
-        !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        !composedResponseText.isEmpty
             || recorder.fileURL != nil
             || !drawing.strokes.isEmpty
+    }
+
+    private var composedResponseText: String {
+        let body = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard isCommonThread else { return body }
+
+        let word = connectingWord.trimmingCharacters(in: .whitespacesAndNewlines)
+        return [word, body].filter { !$0.isEmpty }.joined(separator: "\n\n")
     }
 
     /// Strips whitespace so the field can only ever hold one word.
@@ -298,7 +371,7 @@ struct ChallengeView: View {
         do {
             let attempt = try AttemptRepository(context: modelContext).save(
                 challenge: challenge,
-                responseText: text.trimmingCharacters(in: .whitespacesAndNewlines),
+                responseText: composedResponseText,
                 isDaily: isDaily,
                 temporaryVoiceNoteURL: recorder.fileURL,
                 drawingData: drawing.strokes.isEmpty ? nil : drawing.dataRepresentation()
@@ -313,7 +386,7 @@ struct ChallengeView: View {
 
     private var hasUnsavedContent: Bool {
         savedAttempt == nil && (
-            !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            !composedResponseText.isEmpty
                 || recorder.fileURL != nil
                 || !drawing.strokes.isEmpty
         )
@@ -339,6 +412,7 @@ struct ChallengeView: View {
         withAnimation(.snappy) {
             challenge = ChallengeEngine.practice(type: challenge.type)
             text = ""
+            connectingWord = ""
             recorder.discard()
             drawing = PKDrawing()
         }

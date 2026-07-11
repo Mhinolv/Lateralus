@@ -27,7 +27,9 @@ Challenges and Diary open as sheets. Journal entries push to a detail screen.
 ### Challenge sheet
 
 - Prompt card with directive, icon, prompt, and an optional secondary modifier.
+- Compact game-specific response guidance and an optional stretch prompt.
 - Response editor with text, word count, optional drawing canvas, and optional voice-note recorder.
+- Common Thread separates its single connecting word from an optional explanation.
 - Voice recording displays duration, stops at five minutes, handles interruptions, and can be discarded before save.
 - Save requires at least text, a drawing, or a voice note.
 - Closing or requesting a new prompt confirms before discarding unsaved content.

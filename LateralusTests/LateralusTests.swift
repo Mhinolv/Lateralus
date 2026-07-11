@@ -121,6 +121,21 @@ struct ChallengeEngineTests {
         #expect(ChallengeType.games.count == ChallengeType.allCases.count - 2)
     }
 
+    @Test(arguments: ChallengeType.games)
+    func everyGameProvidesResponseScaffolding(type: ChallengeType) {
+        #expect(!type.directive.isEmpty)
+        #expect(type.responseGuide.count >= 2)
+        #expect(type.responseGuide.allSatisfy { !$0.isEmpty })
+        #expect(type.stretchPrompt?.isEmpty == false)
+    }
+
+    @Test func journalOnlyTypesDoNotProvideGameScaffolding() {
+        #expect(ChallengeType.diary.responseGuide.isEmpty)
+        #expect(ChallengeType.diary.stretchPrompt == nil)
+        #expect(ChallengeType.unknown.responseGuide.isEmpty)
+        #expect(ChallengeType.unknown.stretchPrompt == nil)
+    }
+
     @Test func strideIsAlwaysCoprime() {
         for count in [50, 53, 60, 70, 80, 83, 97, 100, 110, 130, 140, 180, 220] {
             for salt in 0..<19 {
