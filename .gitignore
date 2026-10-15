@@ -7,9 +7,17 @@ DerivedData/
 build/
 *.xcresult
 
-# Beads local runtime state (issues.jsonl is the tracked source of truth)
-.beads/beads.db
-.beads/beads.db-shm
-.beads/beads.db-wal
-.beads/last-touched
-
+# Non-app files: kept on disk, not in the repo
+# Product-team run state, logs, research and status snapshots
+.team/
+research.md
+TEAM_STATUS.md
+# Local agent and tool config, scratch scripts and notes
+.claude/
+.beads/
+scratch/
+*.local.md
+# Design references and deliverables
+components/
+deliverables/
+DESIGN_HANDOFF.md
